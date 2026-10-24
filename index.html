@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Midnight Masalaa, Job Tracker (demo)</title>
+<style>
+/* ============ TOKENS: midnight dark neutral, one warm accent, no invented logo ============ */
+:root{
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --bg:#0B0D12; --card:#12151D; --card2:#181C26; --line:#222838; --line2:#2C3344;
+  --tx:#E9ECF2; --dim:#99A1B3; --faint:#687083;
+  --accent:#E3A44A; --accent-ink:#1A1206;
+  --ok:#46B876; --info:#5B8DD9; --warn:#E3A44A; --warn2:#DD7B4C; --bad:#E0564F;
+  --r:14px; --rs:10px;
+}
+/* ============ FOUNDATIONS (bb-app-foundations, the nine faults) ============ */
+html{touch-action:manipulation; background:var(--bg); min-height:calc(100% + var(--sat))}
+html,body{overscroll-behavior-y:none; margin:0; padding:0}
+*{-webkit-tap-highlight-color:transparent; box-sizing:border-box}
+button,.chip,[data-tap],nav a{-webkit-touch-callout:none; -webkit-user-select:none; user-select:none}
+.sheet,.backdrop{overscroll-behavior:contain}
+@media (pointer:coarse){ input,select,textarea{font-size:16px!important} }
+body.locked{position:fixed; left:0; right:0; width:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--tx); font-size:15px; line-height:1.45;
+  padding-bottom:calc(76px + var(--sab));
+  max-width:520px; margin:0 auto;
+}
+/* SELECT LAW: never the browser's arrow */
+select{-webkit-appearance:none; appearance:none; padding-right:44px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2399A1B3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 16px center; background-size:14px 14px}
+select::-ms-expand{display:none}
+
+/* ============ SHELL ============ */
+.statusfill{position:fixed; top:0; left:0; right:0; height:var(--sat); background:var(--bg); z-index:70;
+  transform:translateY(var(--vv-top,0px))}
+header.top{
+  position:sticky; top:0; z-index:40; background:var(--bg);
+  padding:calc(10px + var(--sat)) 14px 10px; display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid transparent;
+}
+header.top.scrolled{border-bottom-color:var(--line)}
+.wordmark{font-weight:650; font-size:16px; letter-spacing:.01em; white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis}
+.wordmark small{display:block; font-size:11px; font-weight:500; color:var(--dim); letter-spacing:.02em}
+.chip-demo{font-size:10px; font-weight:600; color:var(--accent); border:1px solid var(--accent);
+  border-radius:6px; padding:2px 6px; letter-spacing:.06em; margin-left:2px}
+.top-right{margin-left:auto; display:flex; align-items:center; gap:8px}
+.iconbtn{position:relative; width:40px; height:40px; border:1px solid var(--line); border-radius:12px;
+  background:var(--card); color:var(--tx); display:flex; align-items:center; justify-content:center}
+.iconbtn .bellbadge{position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; border-radius:9px;
+  background:var(--bad); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center;
+  justify-content:center; padding:0 4px; border:2px solid var(--bg)}
+.rolepill{display:flex; align-items:center; gap:5px; height:40px; padding:0 10px; flex:none; border:1px solid var(--line);
+  border-radius:12px; background:var(--card); color:var(--tx); font-size:13px; font-weight:600}
+.rolepill .ic{color:var(--dim)}
+nav.bottom{position:fixed; bottom:0; left:0; right:0; z-index:40; background:var(--bg);
+  border-top:1px solid var(--line); display:flex; padding:6px 8px calc(6px + var(--sab));
+  max-width:520px; margin:0 auto}
+nav.bottom button{flex:1; background:none; border:0; color:var(--faint); font-size:10.5px; font-weight:600;
+  display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 0; border-radius:10px; position:relative}
+nav.bottom button.on{color:var(--tx)}
+nav.bottom button.on .ic{color:var(--accent)}
+nav.bottom .navbadge{position:absolute; top:0; right:calc(50% - 22px); min-width:16px; height:16px; border-radius:8px;
+  background:var(--bad); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px}
+.ic{width:20px; height:20px; flex:none}
+.ic-s{width:16px; height:16px}
+main{padding:4px 16px 24px; min-height:60vh}
+
+/* ============ COMPONENTS ============ */
+h1{font-size:22px; font-weight:650; margin:14px 0 2px}
+.sub{color:var(--dim); font-size:13px; margin:0 0 14px}
+.sec-head{display:flex; align-items:baseline; justify-content:space-between; margin:20px 0 10px}
+.sec-head h2{font-size:15px; font-weight:650; margin:0}
+.sec-head .aside{font-size:12px; color:var(--faint)}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px}
+.pillrow{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:6px 0 2px}
+.pill{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px 10px; color:var(--tx); text-align:left}
+.pill .num{font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1}
+.pill .lab{font-size:11px; color:var(--dim); margin-top:3px}
+.pill.p-bad .num{color:var(--bad)}
+.pill.p-warn .num{color:var(--warn)}
+.pill[data-tap]{cursor:pointer}
+.dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; vertical-align:1px}
+.band{display:inline-flex; align-items:center; font-size:12px; font-weight:600; color:var(--dim); white-space:nowrap}
+.band .dot{margin-right:5px}
+.band-excellent .dot{background:var(--ok)} .band-excellent{color:var(--ok)}
+.band-verygood .dot{background:var(--info)} .band-verygood{color:var(--info)}
+.band-satisfactory .dot{background:var(--warn)} .band-satisfactory{color:var(--warn)}
+.band-needswork .dot{background:var(--warn2)} .band-needswork{color:var(--warn2)}
+.band-poor .dot{background:var(--bad)} .band-poor{color:var(--bad)}
+.band-na .dot{background:var(--faint)} .band-na{color:var(--faint)}
+button{font:inherit}
+.dstrip{display:grid; grid-template-columns:18px minmax(0,1fr) auto; column-gap:12px; align-items:center;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px;
+  margin-bottom:8px; width:100%; text-align:left; color:var(--tx)}
+.dstrip .rank{grid-row:1/3; color:var(--faint); font-size:13px; font-variant-numeric:tabular-nums; text-align:right}
+.dstrip .dname{grid-row:1/3; grid-column:2; min-width:0; font-weight:600; font-size:14px}
+.dstrip .dmeta{display:block; font-weight:500; font-size:11.5px; color:var(--faint); margin-top:3px}
+.dstrip .band{grid-column:3; grid-row:2; justify-self:end}
+.dstrip .dscore{grid-column:3; grid-row:1; justify-self:end; font-size:20px; font-weight:700;
+  font-variant-numeric:tabular-nums; text-align:right; line-height:1.1}
+.dstrip:not(:has(.rank)) .dname{grid-column:1/3}
+.chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; color:var(--dim);
+  border:1px solid var(--line2); border-radius:7px; padding:2.5px 8px; white-space:nowrap}
+.chip-sample{color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, transparent)}
+.chip .dot{margin-right:0}
+.st-completed{color:var(--ok)} .st-completed .dot{background:var(--ok)}
+.st-awaiting{color:var(--warn)} .st-awaiting .dot{background:var(--warn)}
+.st-overdue{color:var(--bad)} .st-overdue .dot{background:var(--bad)}
+.st-in_progress{color:var(--info)} .st-in_progress .dot{background:var(--info)}
+.st-blocked{color:var(--dim)} .st-blocked .dot{background:var(--faint)}
+.st-not_started{color:var(--dim)} .st-not_started .dot{background:var(--line2)}
+.st-cancelled{color:var(--faint); text-decoration:line-through} .st-cancelled .dot{background:var(--line2)}
+.prio{font-size:11px; font-weight:700}
+.prio-Urgent{color:var(--bad)} .prio-High{color:var(--warn)} .prio-Medium{color:var(--dim)} .prio-Low{color:var(--faint)}
+.jobcard{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; margin-bottom:8px}
+.jobcard .jtitle{font-weight:600; font-size:14px; margin-bottom:4px}
+.jobcard .jtitle[data-tap]{min-height:38px; display:flex; align-items:center}
+.jobcard .jmeta{display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px; color:var(--dim)}
+.jobcard .jref{font-size:11px; color:var(--faint); font-variant-numeric:tabular-nums}
+.jobcard .jdue{font-size:12px; color:var(--dim); margin-top:5px}
+.jobcard .jdue.late{color:var(--bad)}
+.returned-note{margin-top:6px; font-size:12px; color:var(--warn2)}
+/* board and list */
+.seg{display:flex; background:var(--card); border:1px solid var(--line); border-radius:11px; padding:3px; gap:3px}
+.seg{flex:none}
+.seg button{flex:1; border:0; background:none; color:var(--dim); font-size:12.5px; font-weight:600; padding:7px 8px; min-height:38px;
+  border-radius:8px; display:flex; align-items:center; justify-content:center; gap:6px}
+.seg button.on{background:var(--card2); color:var(--tx); border:1px solid var(--line2)}
+.fbar{display:flex; flex-direction:column; gap:8px; margin:10px 0 14px}
+.fbar .frow{display:flex; gap:8px}
+.finput{flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line);
+  border-radius:11px; padding:0 12px; color:var(--faint)}
+.finput input{flex:1; background:none; border:0; color:var(--tx); font-size:14px; height:40px; outline:none; min-width:0}
+.fselects{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+.fselects select{height:38px; min-width:0; width:100%; background-color:var(--card); border:1px solid var(--line); border-radius:10px;
+  color:var(--dim); font-size:12.5px; padding-left:10px; padding-right:30px; background-position:right 10px center}
+.board{display:flex; gap:10px; overflow-x:auto; padding:2px 16px 14px; margin:0 -16px; scroll-snap-type:x proximity}
+.bcol{flex:0 0 260px; scroll-snap-align:start}
+.bcol-head{display:flex; align-items:center; gap:8px; padding:6px 4px 8px; font-size:12.5px; font-weight:650; color:var(--dim)}
+.bcount{margin-left:auto; font-size:11.5px; color:var(--faint); font-variant-numeric:tabular-nums}
+.bcol .jobcard{margin-bottom:8px}
+/* scoreboard */
+.srow{display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:12px; align-items:center;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px;
+  margin-bottom:8px; width:100%; text-align:left; color:var(--tx)}
+.srow .sname{grid-row:1/3; min-width:0; font-weight:600; font-size:14px}
+.srow .sparts{display:block; font-weight:500; font-size:11.5px; color:var(--faint); margin-top:3px; font-variant-numeric:tabular-nums}
+.srow .band{grid-column:2; grid-row:2; justify-self:end}
+.srow .dscore{grid-column:2; grid-row:1; justify-self:end; font-size:20px; font-weight:700; text-align:right;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.slider-card{margin:14px 0}
+.slider-card label{display:flex; justify-content:space-between; font-size:13px; color:var(--dim); margin-bottom:10px}
+.slider-card label b{color:var(--tx); font-variant-numeric:tabular-nums}
+input[type=range]{width:100%; accent-color:var(--accent); height:38px}
+.weightline{font-size:12px; color:var(--faint); margin-top:10px}
+/* drill */
+.mathline{font-size:13px; color:var(--dim); background:var(--card2); border:1px solid var(--line);
+  border-radius:var(--rs); padding:10px 12px; font-variant-numeric:tabular-nums; margin:10px 0}
+.drow{display:flex; align-items:center; gap:8px; padding:10px 2px; border-bottom:1px solid var(--line); font-size:13px}
+.drow:last-child{border-bottom:0}
+.drow .dtitle{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.drow .dref{color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums}
+.qev{display:flex; justify-content:space-between; gap:8px; padding:8px 2px; border-bottom:1px solid var(--line); font-size:13px}
+.qev:last-child{border-bottom:0}
+.qev .minus{color:var(--bad); font-weight:600}
+.qev .plus{color:var(--dim); font-variant-numeric:tabular-nums}
+/* sheets */
+.backdrop{position:fixed; inset:0; background:rgba(4,6,10,.62); z-index:60; opacity:0; pointer-events:none; transition:opacity .18s}
+.backdrop.on{opacity:1; pointer-events:auto}
+.sheet{position:fixed; left:0; right:0; bottom:0; z-index:65; background:var(--card); border:1px solid var(--line);
+  border-bottom:0; border-radius:18px 18px 0 0; max-height:88dvh; display:flex; flex-direction:column;
+  transform:translateY(102%); transition:transform .22s ease; max-width:520px; margin:0 auto; outline:none}
+.sheet.on{transform:translateY(0)}
+.sheet.layer2{z-index:68}
+.sheet-head{display:flex; align-items:center; gap:10px; padding:16px 16px 10px}
+.sheet-head .sh-title{font-size:16px; font-weight:650; flex:1}
+.sheet-head .sh-x{width:34px; height:34px; border:1px solid var(--line); border-radius:10px; background:var(--card2);
+  color:var(--dim); display:flex; align-items:center; justify-content:center}
+.sheet-body{overflow-y:auto; padding:0 16px; -webkit-overflow-scrolling:touch}
+.abar{padding:14px 16px calc(14px + var(--sab)); display:flex; flex-direction:column; gap:8px}
+.btn{height:48px; border-radius:13px; border:1px solid var(--line2); background:var(--card2); color:var(--tx);
+  font-size:15px; font-weight:650; width:100%; display:flex; align-items:center; justify-content:center; gap:8px}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn-danger{background:var(--bad); border-color:var(--bad); color:#fff}
+.btn-quiet{background:none; border:0; color:var(--dim); height:40px; font-weight:600}
+.pair{display:flex; gap:8px}
+.pair .btn{flex:1}
+/* forms */
+.field{margin:0 0 12px}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--dim); margin-bottom:6px}
+.field input[type=text], .field textarea, .field select{width:100%; background-color:var(--card2); border:1px solid var(--line);
+  border-radius:11px; color:var(--tx); padding:11px 12px; font-size:16px; font-family:inherit}
+.field textarea{min-height:64px; resize:vertical}
+.f2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.togglerow{display:flex; align-items:center; justify-content:space-between; background:var(--card2);
+  border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin-bottom:12px}
+.togglerow .tl{font-size:14px; font-weight:600}
+.togglerow .tsub{display:block; font-size:12px; color:var(--faint); font-weight:500; margin-top:2px}
+.switch{position:relative; width:46px; height:28px; flex:none}
+.switch input{opacity:0; width:100%; height:100%; position:absolute; margin:0; z-index:2}
+.switch .trk{position:absolute; inset:0; background:var(--line2); border-radius:14px; transition:background .15s}
+.switch .trk::after{content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+  background:#fff; transition:transform .15s}
+.switch input:checked + .trk{background:var(--ok)}
+.switch input:checked + .trk::after{transform:translateX(18px)}
+.stars{display:flex; gap:8px; justify-content:center; padding:8px 0 2px}
+.stars button{width:46px; height:46px; border-radius:12px; border:1px solid var(--line); background:var(--card2);
+  color:var(--faint); display:flex; align-items:center; justify-content:center}
+.stars button.on{color:var(--accent); border-color:var(--accent)}
+.stars button.on .ic{fill:var(--accent)}
+.starlab{text-align:center; font-size:12.5px; color:var(--dim); min-height:18px}
+.reasons{display:flex; flex-wrap:wrap; gap:8px; padding:4px 0}
+.reasons button{border:1px solid var(--line2); background:var(--card2); color:var(--tx); font-size:13px;
+  font-weight:600; border-radius:999px; padding:9px 14px}
+.reasons button.on{border-color:var(--bad); color:var(--bad)}
+/* evidence pair */
+.evpair{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0}
+.evreq{background:var(--card2); border:1px solid var(--line); border-radius:var(--rs); padding:10px 12px}
+.evreq .evlab{font-size:11px; font-weight:700; color:var(--faint); margin-bottom:4px}
+.evreq .evtext{font-size:13px}
+/* photo scenes: honest sample imagery, labelled, never passed off as real */
+.photo{position:relative; border-radius:var(--rs); overflow:hidden; border:1px solid var(--line2); aspect-ratio:4/3; background:#1a1d24}
+.photo .ph-art{position:absolute; inset:0}
+.photo .ph-meta{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:6px;
+  padding:5px 8px; font-size:10px; color:#cfd4de; background:rgba(8,10,14,.72); font-variant-numeric:tabular-nums}
+.photo .ph-meta .chip-sample{font-size:10px; padding:1px 5px; background:rgba(8,10,14,.6)}
+.photo.big{aspect-ratio:16/10}
+.scene-gauge .ph-art{background:
+  radial-gradient(circle at 68% 44%, #e8e4da 0 15.5%, #23272e 16% 18%, #3a3f48 18.5% 19.5%, transparent 20%),
+  conic-gradient(from 210deg at 68% 44%, transparent 0 40deg, rgba(224,86,79,.9) 41deg 44deg, transparent 45deg),
+  linear-gradient(115deg, #262b33 0 38%, #31363f 38% 40%, #22262d 40% 72%, #2b3038 72%),
+  linear-gradient(#1b1f26, #14171d)}
+.scene-gauge .ph-art::before{content:""; position:absolute; left:8%; bottom:14%; width:52%; height:13%;
+  background:linear-gradient(90deg, #3c424c, #2a2f37); border-radius:7px; box-shadow:0 3px 9px rgba(0,0,0,.5)}
+.scene-gauge .ph-art::after{content:""; position:absolute; left:63.2%; top:28%; width:9.6%; aspect-ratio:1;
+  border-radius:50%; background:repeating-conic-gradient(#5d646f 0 4deg, #e8e4da 4deg 26deg); opacity:.28}
+.scene-blurry .ph-art{filter:blur(7px) brightness(.5) saturate(.7); background:
+  radial-gradient(circle at 30% 60%, #4a4f41 0 22%, transparent 40%),
+  linear-gradient(160deg, #14171c 0 30%, #3a3e35 55%, #101216 80%)}
+.scene-blurry .ph-art::before{content:""; position:absolute; left:18%; top:30%; width:48%; height:34%;
+  background:#555a4c; border-radius:9px; transform:rotate(-7deg)}
+.scene-shelf .ph-art{background:
+  linear-gradient(90deg, transparent 0 12%, #3d4350 12% 14%, transparent 14% 48%, #3d4350 48% 50%, transparent 50% 84%, #3d4350 84% 86%, transparent 86%),
+  linear-gradient(#262a33 0 46%, #30353f 46% 50%, #1d2129 50%)}
+.scene-shelf .ph-art::before{content:""; position:absolute; left:20%; top:22%; width:17%; height:22%;
+  background:#cfc9a8; border-radius:4px; box-shadow:26% 0 #cfc9a8, 0 4px 10px rgba(0,0,0,.45)}
+.scene-shelf .ph-art::after{content:""; position:absolute; left:55%; top:20%; width:17%; height:24%; background:#c8c2a2; border-radius:4px}
+.scene-sheet .ph-art{background:linear-gradient(140deg, #23262e 0 18%, #1b1e25 60%)}
+.scene-sheet .ph-art::before{content:""; position:absolute; left:16%; top:12%; width:68%; height:76%; background:
+  repeating-linear-gradient(#f2efe6 0 9%, #c9ccd4 9% 10%), #f2efe6; border-radius:4px; transform:rotate(-2deg);
+  box-shadow:0 6px 16px rgba(0,0,0,.5)}
+.scene-doc .ph-art{background:linear-gradient(120deg, #20232b 0 25%, #191c23 70%)}
+.scene-doc .ph-art::before{content:""; position:absolute; left:22%; top:10%; width:56%; height:80%; background:
+  linear-gradient(transparent 0 14%, #d8dbe2 14% 16%, transparent 16% 26%, #d8dbe2 26% 28%, transparent 28% 38%, #d8dbe2 38% 40%, transparent 40% 50%, #d8dbe2 50% 52%, transparent 52%),
+  #efece3; border-radius:4px; box-shadow:0 6px 16px rgba(0,0,0,.5)}
+.scene-doc .ph-art::after{content:""; position:absolute; right:28%; bottom:22%; width:13%; aspect-ratio:1; border:3px solid rgba(91,141,217,.55); border-radius:50%; transform:rotate(-14deg)}
+.scene-generic .ph-art{background:linear-gradient(135deg, #272b34 0 30%, #1a1d25 60%), #1a1d25}
+.scene-generic .ph-art::before{content:""; position:absolute; left:14%; top:26%; width:46%; height:40%;
+  background:#343a45; border-radius:8px; box-shadow:0 5px 14px rgba(0,0,0,.4)}
+/* audit */
+.audit{margin:6px 0 10px}
+.aline{display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px}
+.aline:last-child{border-bottom:0}
+.aline .at{color:var(--faint); white-space:nowrap; font-variant-numeric:tabular-nums}
+.aline .who{color:var(--dim); font-weight:600; white-space:nowrap}
+.aline.fresh{animation:freshline 1.4s ease 1}
+@keyframes freshline{0%{background:rgba(227,164,74,.18)}100%{background:transparent}}
+/* ai card */
+.ai-card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:13px 14px; margin:12px 0 2px}
+.ai-card .ai-top{display:flex; align-items:center; gap:8px; margin-bottom:7px}
+.ai-card .ai-top .t{font-size:12.5px; font-weight:650; color:var(--dim)}
+.ai-card p{margin:0; font-size:14px}
+.ai-card .ai-note{font-size:11px; color:var(--faint); margin-top:8px}
+.voice{display:flex; align-items:center; gap:10px; background:var(--card2); border:1px solid var(--line);
+  border-radius:11px; padding:10px 12px; margin-bottom:12px}
+.voice .vmeta{flex:1; min-width:0}
+.voice .vt{font-size:13px; font-weight:650}
+.voice .vs{font-size:11.5px; color:var(--faint)}
+.voice .btn{width:auto; height:36px; font-size:12.5px; padding:0 12px; border-radius:9px}
+.transcript{font-size:13px; color:var(--dim); background:var(--card2); border:1px solid var(--line);
+  border-radius:11px; padding:10px 12px; margin-bottom:12px; font-style:italic}
+/* misc */
+.empty{color:var(--faint); font-size:13px; text-align:center; padding:22px 10px; border:1px dashed var(--line2); border-radius:var(--r)}
+.note{font-size:12px; color:var(--faint)}
+.toast{position:fixed; left:16px; right:16px; bottom:calc(86px + var(--sab)); z-index:80; background:#E9ECF2; color:#14161c;
+  border-radius:12px; padding:12px 14px; font-size:13.5px; font-weight:600; opacity:0; transform:translateY(8px);
+  transition:all .2s; pointer-events:none; max-width:488px; margin:0 auto}
+.toast.on{opacity:1; transform:none}
+.bellrow{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px}
+.bellrow:last-child{border-bottom:0}
+.bellrow .ic{color:var(--dim); margin-top:1px}
+.bellrow .bwhen{display:block; font-size:11.5px; color:var(--faint); margin-top:2px}
+.rolerow{display:flex; align-items:center; gap:12px; padding:13px 2px; border-bottom:1px solid var(--line); width:100%;
+  background:none; border-left:0; border-right:0; border-top:0; color:var(--tx); font-size:15px; text-align:left}
+.rolerow:last-child{border-bottom:0}
+.rolerow .rwho{flex:1}
+.rolerow .rsub{display:block; font-size:12px; color:var(--faint); margin-top:1px}
+.rolerow .ic:first-child{color:var(--dim)}
+.rolerow .ic:last-child{color:var(--ok); opacity:0}
+.rolerow.on .ic:last-child{opacity:1}
+.bigref{font-size:26px; font-weight:750; text-align:center; font-variant-numeric:tabular-nums; letter-spacing:.02em; margin:8px 0 2px}
+.refsub{text-align:center; color:var(--dim); font-size:13.5px; margin-bottom:6px}
+.tabrow{display:flex; gap:3px; background:var(--card); border:1px solid var(--line); border-radius:11px; padding:3px; margin:12px 0}
+.tabrow button{flex:1; border:0; background:none; color:var(--dim); font-size:13px; font-weight:600; padding:8px; border-radius:8px}
+.tabrow button.on{background:var(--card2); color:var(--tx); border:1px solid var(--line2)}
+@media (hover:hover){
+  .iconbtn:hover,.rolepill:hover,.btn:hover,.seg button:hover{border-color:var(--line2); filter:brightness(1.08)}
+  .jobcard[data-tap]:hover,.dstrip[data-tap]:hover,.srow[data-tap]:hover{border-color:var(--line2)}
+}
+</style>
+</head>
+<body>
+<div class="statusfill"></div>
+<header class="top" id="topbar"></header>
+<main id="screen"></main>
+<nav class="bottom" id="nav"></nav>
+<div class="backdrop" id="backdrop" data-tap="sheetClose"></div>
+<div id="sheets"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="seed.js"></script>
+<script src="engine.js"></script>
+<script src="icons.js"></script>
+<script>
+'use strict';
+/* ================= SHELL: store, helpers, actions, history. Written by Claude; the screen and
+   sheet renderers between @@PART markers are built by the BB Crew and judged before merging. ================= */
+const S = window.MM_SEED, E = window.MM_ENGINE, NOW = E.T(S.demoNow);
+
+const store = {
+  role: 'director', screen: 'home', sheets: [],
+  jobs: JSON.parse(JSON.stringify(S.jobs)),
+  excellentMin: S.excellentMin,
+  boardView: 'board', filters: { q: '', dept: '', state: '', prio: '' },
+  approveStars: 0, rejectReason: '', assignDraft: null, editRef: null,
+  voiceOpen: false, events: [], freshAudit: null, sbTab: 'dept',
+};
+
+/* ---------- helpers (H) ---------- */
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const STATE_LABELS = { not_started:'Not started', in_progress:'In progress', blocked:'Blocked',
+  awaiting:'Awaiting approval', completed:'Completed', overdue:'Overdue', cancelled:'Cancelled' };
+const H = {};
+H.esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+H.icon = (n, cls) => '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (window.MM_ICONS[n] || '') + '</svg>';
+H.fmt = (v, f) => v === null || v === undefined ? 'n/a'
+  : f === '1dp' ? (Math.round(v * 10) / 10).toFixed(1) : f === 'raw' ? String(v) : String(Math.round(v));
+H.fig = (v, path, f) => '<span data-fig="' + path + '" data-fmt="' + (f || 'int') + '">' + H.fmt(v, f) + '</span>';
+H.d = ms => new Date(ms + 5.5 * 3600e3);
+H.fmtDay = ms => { const d = H.d(ms); return DAYS[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; };
+H.fmtTime = ms => { const d = H.d(ms); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+H.fmtDT = ms => H.fmtDay(ms) + ', ' + H.fmtTime(ms);
+H.deptName = k => (S.departments.find(d => d.key === k) || { name: k }).name;
+H.empName = id => id === 'Director' ? 'Director' : (S.employees.find(e => e.id === id) || { name: id }).name;
+H.empFirst = id => H.empName(id).split(' ')[0];
+H.empsOf = k => S.employees.filter(e => e.depts.includes(k));
+H.job = ref => store.jobs.find(j => j.ref === ref);
+H.stateChip = job => { const st = E.derivedState(job, NOW);
+  return '<span class="chip st-' + st + '"><span class="dot"></span>' + STATE_LABELS[st] + '</span>'; };
+H.prioChip = p => '<span class="prio prio-' + p + '">' + p + '</span>';
+H.bandChip = (overall, opts) => { const b = E.bandFor(overall, store.excellentMin);
+  const data = opts && opts.live ? ' data-bandfig data-overall="' + (overall === null ? '' : overall) + '"' : '';
+  return '<span class="band band-' + b.key + '"' + data + '><span class="dot"></span>' + b.label + '</span>'; };
+H.relDue = job => { const due = E.effectiveDue(job), st = E.derivedState(job, NOW);
+  const ext = job.extension ? ' <span class="chip">Extended, approved</span>' : '';
+  if (st === 'overdue') return '<span class="jdue late">Overdue, was due ' + H.fmtDT(due) + '</span>' + ext;
+  if (E.dayKey(due) === E.dayKey(NOW)) return '<span class="jdue">Due today ' + H.fmtTime(due) + '</span>' + ext;
+  return '<span class="jdue">Due ' + H.fmtDT(due) + '</span>' + ext; };
+H.photoHTML = (p, big) => !p ? '' :
+  '<figure class="photo ' + (big ? 'big ' : '') + 'scene-' + (p.scene || 'generic') + '" style="margin:0">' +
+  '<div class="ph-art"></div><figcaption class="ph-meta"><span class="chip-sample chip">Sample</span><span>' +
+  H.esc(p.label || 'IMG_0000.jpg') + '</span></figcaption></figure>';
+H.jobCard = (job, opts) => { opts = opts || {};
+  const last = job.rejections.length ? job.rejections[job.rejections.length - 1] : null;
+  return '<article class="jobcard" data-tap="jobOpen" data-arg="' + job.ref + '">' +
+    '<div class="jtitle">' + H.esc(job.title) + '</div>' +
+    '<div class="jmeta">' + H.stateChip(job) + H.prioChip(job.priority) +
+      '<span>' + H.esc(opts.who === 'dept' ? H.deptName(job.dept) : H.empFirst(job.assignee)) + '</span>' +
+      '<span class="jref">' + job.ref + '</span></div>' +
+    H.relDue(job) +
+    (opts.returned && last ? '<div class="returned-note">Returned: ' + H.esc(last.reason) + '</div>' : '') +
+    '</article>'; };
+H.auditHTML = job => '<div class="audit">' + job.audit.map(a =>
+  '<div class="aline' + (store.freshAudit && a.at === store.freshAudit ? ' fresh' : '') + '"><span class="at">' +
+  H.fmtDay(E.T(a.at)).slice(4) + ' ' + H.fmtTime(E.T(a.at)) + '</span><span class="who">' + H.esc(H.empFirst(a.who)) +
+  '</span><span>' + H.esc(a.what) + '</span></div>').join('') + '</div>';
+H.secHead = (t, aside) => '<div class="sec-head"><h2>' + t + '</h2>' + (aside ? '<span class="aside">' + aside + '</span>' : '') + '</div>';
+H.empty = m => '<div class="empty">' + m + '</div>';
+H.sampleChip = () => '<span class="chip chip-sample">Sample</span>';
+H.starsRow = () => '<div class="stars">' + [1,2,3,4,5].map(n =>
+  '<button type="button" class="' + (store.approveStars >= n ? 'on' : '') + '" data-tap="approveStars" data-arg="' + n + '" aria-label="' + n + ' of 5">' + H.icon('star') + '</button>').join('') + '</div>' +
+  '<div class="starlab">' + (store.approveStars ? store.approveStars + ' of 5' : 'Tap a rating') + '</div>';
+H.score = filter => E.score(S, store.jobs, NOW, filter);
+H.counts = () => E.counts(S, store.jobs, NOW);
+
+/* ---------- screens and sheets built by the crew ---------- */
+const SCREENS = {}, SHEETS = {};
+
+/*@@PART:S1@@*/
+SCREENS.home = () => {
+  const b = E.brief(S, store.jobs, NOW);
+  const c = H.counts();
+  const co = H.score(null);
+
+  const rankedDepts = [...S.departments].sort((a, bDept) => {
+    const aScore = H.score({ dept: a.key }).overall;
+    const bScore = H.score({ dept: bDept.key }).overall;
+    if (aScore === null && bScore === null) return 0;
+    if (aScore === null) return 1;
+    if (bScore === null) return -1;
+    return bScore - aScore;
+  });
+
+  const deptRows = rankedDepts.map((d, i) => {
+    const s = H.score({ dept: d.key });
+    return '<button class="dstrip" data-tap="drill" data-arg="dept:' + d.key + '">' +
+      '<span class="rank">' + (i + 1) + '</span>' +
+      '<span class="dname">' + H.esc(d.name) +
+        '<span class="dmeta">Completion ' + H.fig(s.completionPct, 'score.dept.' + d.key + '.completionPct') +
+        ' · On time ' + H.fig(s.ontimePct, 'score.dept.' + d.key + '.ontimePct') +
+        ' · Quality ' + H.fig(s.qualityPct, 'score.dept.' + d.key + '.qualityPct') + '</span></span>' +
+      H.bandChip(s.overall, { live: true }) +
+      '<span class="dscore">' + H.fig(s.overall, 'score.dept.' + d.key + '.overall') + '</span></button>';
+  }).join('');
+
+  return '<h1>Good morning</h1>' +
+    '<p class="sub">' + H.fmtDT(NOW) + ', demo clock frozen</p>' +
+    '<div class="ai-card"><div class="ai-top">' + H.sampleChip() + '<span class="t">Morning brief</span></div>' +
+    '<p>' + H.fig(b.overdue, 'brief.overdue') + ' jobs are past their deadline and ' + H.fig(b.awaiting, 'brief.awaiting') +
+    ' are waiting for your approval. ' + H.esc(b.worst.name) + ' is furthest behind at ' +
+    H.fig(b.worst.overall, 'brief.worstOverall') + ' overall. ' + H.fig(b.approvedYesterday, 'brief.approvedYesterday') +
+    ' job was approved yesterday.</p>' +
+    '<div class="ai-note">Worded by the system, computed from the data. A person always decides.</div></div>' +
+    '<div class="pillrow">' +
+      '<button class="pill p-bad" data-tap="navJobs" data-arg="overdue">' +
+        '<div class="num">' + H.fig(c.overdue, 'counts.overdue') + '</div><div class="lab">Overdue</div>' +
+      '</button>' +
+      '<button class="pill p-warn" data-tap="nav" data-arg="approvals">' +
+        '<div class="num">' + H.fig(c.awaiting, 'counts.awaiting') + '</div><div class="lab">Waiting your approval</div>' +
+      '</button>' +
+      '<button class="pill" data-tap="drill" data-arg="company">' +
+        '<div class="num">' + H.fig(co.overall, 'score.company.overall') + '</div><div class="lab">Company score</div>' +
+      '</button>' +
+    '</div>' +
+    '<button class="btn btn-primary" data-tap="assignOpen">Assign a new job</button>' +
+    H.secHead('Departments', S.periodLabel) +
+    deptRows;
+};
+/*@@END:S1@@*/
+
+/*@@PART:S2@@*/
+SCREENS.jobs = () => {
+  const deptOptions = S.departments.map(d => {
+    const selected = store.filters.dept === d.key ? ' selected' : '';
+    return `<option value="${H.esc(d.key)}"${selected}>${H.esc(d.name)}</option>`;
+  }).join('');
+
+  const stateOptions = [
+    ['', 'All statuses'],
+    ['not_started', 'Not started'],
+    ['in_progress', 'In progress'],
+    ['blocked', 'Blocked'],
+    ['awaiting', 'Awaiting approval'],
+    ['overdue', 'Overdue'],
+    ['completed', 'Completed'],
+    ['cancelled', 'Cancelled']
+  ].map(([val, label]) => {
+    const selected = store.filters.state === val ? ' selected' : '';
+    return `<option value="${val}"${selected}>${label}</option>`;
+  }).join('');
+
+  const prioOptions = ['', 'Low', 'Medium', 'High', 'Urgent'].map(p => {
+    const selected = store.filters.prio === p ? ' selected' : '';
+    return `<option value="${H.esc(p)}"${selected}>${p || 'All priorities'}</option>`;
+  }).join('');
+
+  const boardOn = store.boardView === 'board' ? ' on' : '';
+  const listOn = store.boardView === 'list' ? ' on' : '';
+
+  return `
+    <h1>Jobs</h1>
+    <p class="sub">Every department, every status</p>
+    <button class="btn btn-primary" data-tap="assignOpen">Assign a new job</button>
+    <div class="fbar">
+      <div class="frow">
+        <label class="finput">${H.icon('search', 'ic-s')}<input id="f-q" type="search" placeholder="Search jobs, refs, people" value="${H.esc(store.filters.q)}"></label>
+        <div class="seg">
+          <button class="${boardOn}" data-tap="boardView" data-arg="board">${H.icon('board', 'ic-s')}Board</button>
+          <button class="${listOn}" data-tap="boardView" data-arg="list">${H.icon('list', 'ic-s')}List</button>
+        </div>
+      </div>
+      <div class="fselects">
+        <select id="f-fdept">
+          <option value="">All departments</option>
+          ${deptOptions}
+        </select>
+        <select id="f-fstate">
+          ${stateOptions}
+        </select>
+        <select id="f-fprio">
+          ${prioOptions}
+        </select>
+      </div>
+    </div>
+    <div id="jobs-results">${window.renderJobResults()}</div>
+  `;
+};
+
+window.renderJobResults = () => {
+  const jobs = SCREENS.jobs.__filteredJobs ? SCREENS.jobs.__filteredJobs() : [];
+  if (store.boardView === 'board') {
+    return SCREENS.jobs.__boardView(jobs);
+  }
+  return SCREENS.jobs.__listView(jobs);
+};
+
+SCREENS.jobs.__filteredJobs = () => {
+  const { q, dept, prio, state } = store.filters;
+  const qLower = (q || '').toLowerCase();
+  const jobs = store.jobs.filter(job => {
+    if (qLower) {
+      const title = job.title.toLowerCase();
+      const ref = job.ref.toLowerCase();
+      const empName = H.empName(job.assignee).toLowerCase();
+      if (!title.includes(qLower) && !ref.includes(qLower) && !empName.includes(qLower)) return false;
+    }
+    if (dept && job.dept !== dept) return false;
+    if (prio && job.priority !== prio) return false;
+    if (state && E.derivedState(job, NOW) !== state) return false;
+    return true;
+  });
+
+  const order = {
+    overdue: 0,
+    awaiting: 1,
+    blocked: 2,
+    in_progress: 3,
+    not_started: 4,
+    completed: 5,
+    cancelled: 6
+  };
+
+  return jobs.sort((a, b) => {
+    const aState = E.derivedState(a, NOW);
+    const bState = E.derivedState(b, NOW);
+    const aOrder = order[aState];
+    const bOrder = order[bState];
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return E.effectiveDue(a) - E.effectiveDue(b);
+  });
+};
+
+SCREENS.jobs.__boardView = (jobs) => {
+  const visibleJobs = jobs.filter(job => E.derivedState(job, NOW) !== 'cancelled');
+  const columns = [
+    { name: 'Not started', state: 'not_started' },
+    { name: 'In progress', state: 'in_progress' },
+    { name: 'Blocked', state: 'blocked' },
+    { name: 'Awaiting approval', state: 'submitted' },
+    { name: 'Completed', state: 'approved' }
+  ];
+
+  const boardHtml = columns.map(col => {
+    const colJobs = visibleJobs.filter(job => {
+      const derived = E.derivedState(job, NOW);
+      if (col.state === 'submitted') return derived === 'awaiting';
+      if (col.state === 'approved') return derived === 'completed';
+      return derived === col.state;
+    });
+    const cards = colJobs.length
+      ? colJobs.map(job => H.jobCard(job)).join('')
+      : H.empty('Nothing here');
+    return `<div class="bcol"><div class="bcol-head">${col.name}<span class="bcount">${colJobs.length}</span></div>${cards}</div>`;
+  }).join('');
+
+  return `<p class="note">${H.fig(visibleJobs.length, 'jobs.visible', 'raw')} jobs on the board, cancelled jobs sit in the list view</p><div class="board">${boardHtml}</div>`;
+};
+
+SCREENS.jobs.__listView = (jobs) => {
+  if (!jobs.length) return H.empty('No jobs match these filters. Clear a filter above.');
+  const cards = jobs.map(job => H.jobCard(job)).join('');
+  return `<p class="note">${H.fig(jobs.length, 'jobs.visible', 'raw')} jobs</p>${cards}`;
+};
+/*@@END:S2@@*/
+
+/*@@PART:S3@@*/
+SHEETS.assign = () => {
+  const d = store.assignDraft || {};
+  const editing = !!store.editRef;
+  const title = editing ? 'Edit job ' + store.editRef : 'New job';
+
+  let body = '';
+
+  if (!editing) {
+    if (!store.voiceOpen) {
+      body += '<div class="voice">' + H.icon('mic') + '<div class="vmeta"><div class="vt">Voice note from the floor</div><div class="vs">9 seconds, recorded sample</div></div><button class="btn" data-tap="voiceDraft">Read it</button></div>';
+    } else {
+      body += '<div class="voice">' + H.icon('mic') + '<div class="vmeta"><div class="vt">Voice note from the floor</div><div class="vs">' + H.sampleChip() + '</div></div></div>';
+      body += '<div class="transcript">"Cold room two door seal is leaking again. Get Ruwan to replace the gasket today before dinner service. Photo of the gauge after."</div>';
+      body += '<button class="btn" data-tap="voiceApply">Draft the job from this</button>';
+      body += '<p class="note">The system turns the note into a draft. The Director checks it and dispatches. A sample, no live model runs in this demo.</p>';
+    }
+  }
+
+  body += '<div class="field"><label>Job title</label><input type="text" id="f-title" value="' + H.esc(d.title || '') + '" placeholder="What has to be done"></div>';
+  body += '<div class="field"><label>Details</label><textarea id="f-desc" placeholder="Anything the person needs to know">' + H.esc(d.desc || '') + '</textarea></div>';
+
+  const deptOptions = '<option value="">Pick one</option>' + S.departments.map(function (dep) {
+    return '<option value="' + H.esc(dep.key) + '"' + (d.dept === dep.key ? ' selected' : '') + '>' + H.esc(dep.name) + '</option>';
+  }).join('');
+
+  let empOptions = '<option value="">Pick a department first</option>';
+  if (d.dept) {
+    empOptions = H.empsOf(d.dept).map(function (emp) {
+      return '<option value="' + H.esc(emp.id) + '"' + (d.emp === emp.id ? ' selected' : '') + '>' + H.esc(emp.name) + '</option>';
+    }).join('');
+  }
+
+  body += '<div class="f2">';
+  body += '<div class="field"><label>Department</label><select id="f-dept">' + deptOptions + '</select></div>';
+  body += '<div class="field"><label>Assign to</label><select id="f-emp">' + empOptions + '</select></div>';
+  body += '</div>';
+
+  const dueday = d.dueday || 'today';
+  const duetime = d.duetime || '17:00';
+  const prio = d.prio || 'High';
+
+  body += '<div class="f2">';
+  body += '<div class="field"><label>Due day</label><select id="f-dueday">';
+  body += '<option value="today"' + (dueday === 'today' ? ' selected' : '') + '>Today, Tue 27</option>';
+  body += '<option value="tomorrow"' + (dueday === 'tomorrow' ? ' selected' : '') + '>Tomorrow, Wed 28</option>';
+  body += '<option value="thu"' + (dueday === 'thu' ? ' selected' : '') + '>Thu 29 Oct</option>';
+  body += '<option value="fri"' + (dueday === 'fri' ? ' selected' : '') + '>Fri 30 Oct</option>';
+  body += '</select></div>';
+  body += '<div class="field"><label>Due time</label><select id="f-duetime">';
+  ['12:00', '15:00', '16:00', '17:00', '18:00'].forEach(function (t) {
+    body += '<option value="' + t + '"' + (duetime === t ? ' selected' : '') + '>' + t + '</option>';
+  });
+  body += '</select></div>';
+  body += '</div>';
+
+  body += '<div class="f2">';
+  body += '<div class="field"><label>Priority</label><select id="f-prio">';
+  ['Low', 'Medium', 'High', 'Urgent'].forEach(function (p) {
+    body += '<option value="' + p + '"' + (prio === p ? ' selected' : '') + '>' + p + '</option>';
+  });
+  body += '</select></div>';
+  body += '<div class="field"><label>Evidence asked for</label><input type="text" id="f-evkind" value="' + H.esc(d.evkind || 'Photo of the finished work') + '"></div>';
+  body += '</div>';
+
+  const evreqChecked = d.evreq === false ? '' : ' checked';
+  body += '<div class="togglerow"><span class="tl">Photo evidence required<span class="tsub">The job cannot be completed without it</span></span><span class="switch"><input type="checkbox" id="f-evreq"' + evreqChecked + '><span class="trk"></span></span></div>';
+
+  const bar = '<button class="btn btn-primary" data-tap="dispatchJob">' + (editing ? 'Save changes' : 'Dispatch the job') + '</button><button class="btn btn-quiet" data-tap="sheetClose">Cancel</button>';
+
+  return { title: title, body: body, bar: bar };
+};
+
+SHEETS.dispatched = (ref) => {
+  const j = H.job(ref);
+  const title = 'Dispatched';
+
+  let body = '<div class="bigref">' + j.ref + '</div>';
+  body += '<p class="refsub">Assigned to ' + H.esc(H.empName(j.assignee)) + ' in ' + H.esc(H.deptName(j.dept)) + '</p>';
+  body += '<p class="refsub">' + H.relDue(j) + '</p>';
+  if (j.evidence.required) {
+    body += '<p class="refsub"><span class="chip">' + H.icon('camera', 'ic-s') + ' ' + H.esc(j.evidence.kind) + '</span></p>';
+  }
+  body += '<p class="note">' + H.esc(H.empFirst(j.assignee)) + ' sees it on his phone now. Reminders follow on the demo clock: one the day before, one on the deadline.</p>';
+
+  const bar = '<button class="btn btn-primary" data-tap="sheetClose">Done</button>';
+
+  return { title: title, body: body, bar: bar };
+};
+/*@@END:S3@@*/
+
+/*@@PART:S4@@*/
+SCREENS.myday = () => {
+  const my = E.myDay(S, store.jobs, NOW, store.role);
+  const emp = S.employees.find(e => e.id === store.role) || { depts: [] };
+  const deptNames = S.departments.filter(d => emp.depts.includes(d.key)).map(d => d.name).join(', ');
+  return '<h1>My day</h1><p class="sub">' + H.esc(H.empName(store.role)) + ' · ' + H.esc(deptNames) + '</p>' +
+    H.secHead('Due today', H.fig(my.dueToday.length, 'myday.dueToday', 'raw')) +
+    (my.dueToday.length ? my.dueToday.map(j => H.jobCard(j)).join('') : H.empty('Nothing due today.')) +
+    H.secHead('Overdue', H.fig(my.overdue.length, 'myday.overdue', 'raw')) +
+    (my.overdue.length ? my.overdue.map(j => H.jobCard(j)).join('') : H.empty('Nothing overdue. Keep it that way.')) +
+    H.secHead('Returned to you', H.fig(my.returned.length, 'myday.returned', 'raw')) +
+    (my.returned.length ? my.returned.map(j => H.jobCard(j, { returned: true })).join('') : H.empty('Nothing returned.'));
+};
+
+SHEETS.job = (ref) => {
+  const j = H.job(ref);
+  const st = E.derivedState(j, NOW);
+  const director = store.role === 'director';
+  let body = '<h1>' + H.esc(j.title) + '</h1>' +
+    '<p class="sub">' + H.stateChip(j) + ' ' + H.prioChip(j.priority) + ' <span class="chip">' + H.esc(H.deptName(j.dept)) + '</span>' +
+    ' <span class="chip">' + H.icon('user', 'ic-s') + H.esc(H.empName(j.assignee)) + '</span></p>';
+  if (j.desc) body += '<p>' + H.esc(j.desc) + '</p>';
+  body += '<p>' + H.relDue(j) + '</p>';
+  if (j.blockedReason && st === 'blocked') body += '<p class="note">Blocked: ' + H.esc(j.blockedReason) + '</p>';
+  body += '<div class="evpair"><div class="evreq"><div class="evlab">Asked for</div><div class="evtext">' +
+    (j.evidence.required ? H.esc(j.evidence.kind) : 'No evidence required') + '</div></div>' +
+    (j.photos.length ? H.photoHTML(j.photos[j.photos.length - 1]) :
+      '<div class="evreq"><div class="evlab">Attached</div><div class="evtext">Nothing yet</div></div>') + '</div>';
+  if (j.photos.length > 1) {
+    for (let i = 0; i < j.photos.length - 1; i += 2) {
+      body += '<div class="evpair">' + H.photoHTML(j.photos[i]) + (i + 1 < j.photos.length - 1 ? H.photoHTML(j.photos[i + 1]) : '') + '</div>';
+    }
+  }
+  if (st === 'awaiting') body += '<p class="note">Submitted and waiting for the Director. Awaiting approval is not completed: it counts only once it is approved.</p>';
+  if (j.rating) body += '<p class="note">Approved with quality ' + H.fig(j.rating.stars, 'raw.stars', 'raw') + ' of 5.</p>';
+  body += H.secHead('History', '') + H.auditHTML(j);
+
+  let bar;
+  if (director && st === 'awaiting') {
+    bar = '<button class="btn btn-primary" data-tap="approveOpen" data-arg="' + j.ref + '">Review and approve</button>' +
+      '<div class="pair"><button class="btn" data-tap="rejectOpen" data-arg="' + j.ref + '">Reject</button>' +
+      '<button class="btn" data-tap="editJob" data-arg="' + j.ref + '">Edit job</button></div>' +
+      '<button class="btn btn-quiet" data-tap="sheetClose">Close</button>';
+  } else if (director) {
+    bar = '<button class="btn btn-primary" data-tap="editJob" data-arg="' + j.ref + '">Edit job</button>' +
+      '<button class="btn btn-quiet" data-tap="sheetClose">Close</button>';
+  } else if (st === 'awaiting' || st === 'completed' || st === 'cancelled') {
+    bar = '<button class="btn btn-quiet" data-tap="sheetClose">Close</button>';
+  } else {
+    bar = '<button class="btn btn-primary" data-tap="submitJob" data-arg="' + j.ref + '">Submit for approval</button>' +
+      '<button class="btn" data-tap="attachPhoto" data-arg="' + j.ref + '">' + H.icon('camera', 'ic-s') + 'Attach photo, sample</button>' +
+      '<button class="btn btn-quiet" data-tap="sheetClose">Close</button>';
+  }
+  return { title: j.ref, body, bar };
+};
+
+SHEETS.nudge = (ref) => {
+  const j = H.job(ref);
+  const match = j.evidence.kind.match(/\d+/);
+  const asked = match ? parseInt(match[0], 10) : 0;
+  const attached = j.photos.length;
+  const body = '<div class="ai-card"><div class="ai-top">' + H.sampleChip() + '<span class="t">Completeness check</span></div>' +
+    '<p>This job asked for ' + H.fig(asked, 'nudge.asked', 'raw') + ' items of evidence and ' +
+    H.fig(attached, 'nudge.attached', 'raw') + ' is attached. Submit anyway?</p>' +
+    '<div class="ai-note">The system reads the evidence line and counts what is attached. A person always decides.</div></div>';
+  const bar = '<button class="btn btn-primary" data-tap="nudgeConfirm" data-arg="' + j.ref + '">Submit anyway</button>' +
+    '<button class="btn btn-quiet" data-tap="sheetClose">Go back and attach the rest</button>';
+  return { title: 'One check before it goes', body, bar };
+};
+/*@@END:S4@@*/
+
+/*@@PART:S5@@*/
+SCREENS.approvals = () => {
+  const queue = store.jobs.filter(j => j.state === 'submitted').sort((a, b) => E.T(a.submittedAt) - E.T(b.submittedAt));
+  let html = '<h1>Waiting your approval</h1>' +
+    '<p class="sub">' + H.fig(queue.length, 'counts.awaiting', 'raw') + ' submitted, oldest first</p>';
+  if (queue.length === 0) {
+    html += H.empty('Nothing waiting. Approved jobs count; submitted ones do not, yet.');
+  } else {
+    queue.forEach(j => {
+      html += '<article class="jobcard">' +
+        '<div class="jtitle" data-tap="jobOpen" data-arg="' + j.ref + '">' + H.esc(j.title) + '</div>' +
+        '<div class="jmeta">' + H.prioChip(j.priority) + '<span>' + H.esc(H.empName(j.assignee)) + '</span>' +
+        '<span>' + H.esc(H.deptName(j.dept)) + '</span><span class="jref">' + j.ref + '</span></div>' +
+        '<p class="note">Submitted ' + H.fmtDT(E.T(j.submittedAt)) + '</p>' +
+        '<div class="evpair"><div class="evreq"><div class="evlab">Asked for</div><div class="evtext">' +
+        H.esc(j.evidence.kind) + '</div></div>' +
+        (j.photos.length ? H.photoHTML(j.photos[j.photos.length - 1]) :
+          '<div class="evreq"><div class="evlab">Attached</div><div class="evtext">Nothing attached</div></div>') + '</div>' +
+        '<div class="pair"><button class="btn btn-primary" data-tap="approveOpen" data-arg="' + j.ref + '">Approve</button>' +
+        '<button class="btn" data-tap="rejectOpen" data-arg="' + j.ref + '">Reject</button></div>' +
+        '</article>';
+    });
+  }
+  return html;
+};
+
+SHEETS.approve = (ref) => {
+  const j = H.job(ref);
+  let body = '<h1>' + H.esc(j.title) + '</h1>' +
+    '<p class="sub">' + H.esc(H.empName(j.assignee)) + ' · submitted ' + H.fmtDT(E.T(j.submittedAt)) + '</p>' +
+    '<div class="evpair"><div class="evreq"><div class="evlab">Asked for</div><div class="evtext">' +
+    H.esc(j.evidence.kind) + '</div></div>' +
+    (j.photos.length ? H.photoHTML(j.photos[j.photos.length - 1], true) :
+      '<div class="evreq"><div class="evlab">Attached</div><div class="evtext">Nothing attached</div></div>') + '</div>' +
+    H.starsRow() +
+    '<p class="note">The rating writes to quality, 20 per cent of the score, this month. Approving marks the job completed and tells ' +
+    H.esc(H.empFirst(j.assignee)) + '.</p>';
+  const bar = '<button class="btn btn-primary" data-tap="approveConfirm" data-arg="' + j.ref + '">Approve, mark completed</button>' +
+    '<button class="btn btn-quiet" data-tap="sheetClose">Cancel</button>';
+  return { title: 'Approve and rate', body, bar };
+};
+
+SHEETS.reject = (ref) => {
+  const j = H.job(ref);
+  const reasons = ['Incomplete evidence, retake photo', 'Work not finished', 'Wrong job or wrong location', 'Below standard, redo'];
+  let body = '<h1>' + H.esc(j.title) + '</h1>' +
+    '<p class="sub">' + H.esc(H.empName(j.assignee)) + ' · ' + H.esc(H.deptName(j.dept)) + '</p>' +
+    (j.photos.length ? H.photoHTML(j.photos[j.photos.length - 1], true) : '') +
+    '<p class="note">Why is it going back?</p>' +
+    '<div class="reasons">';
+  reasons.forEach(reason => {
+    body += '<button data-tap="rejectPick" data-arg="' + reason + '" class="' + (store.rejectReason === reason ? 'on' : '') + '">' + reason + '</button>';
+  });
+  body += '</div>' +
+    '<p class="note">A rejection returns the job to ' + H.esc(H.empFirst(j.assignee)) + ' with the reason, dents quality by 5 points this month and the deadline clock keeps running.</p>';
+  const bar = '<button class="btn btn-danger" data-tap="rejectConfirm" data-arg="' + j.ref + '">Reject and return</button>' +
+    '<button class="btn btn-quiet" data-tap="sheetClose">Cancel</button>';
+  return { title: 'Reject and return', body, bar };
+};
+/*@@END:S5@@*/
+
+/*@@PART:S6@@*/
+SCREENS.scoreboard = () => {
+  const partsLine = (s, base) =>
+    'Completion ' + H.fig(s.completionPct, base + '.completionPct') + ' · On time ' + H.fig(s.ontimePct, base + '.ontimePct') +
+    ' · Quality ' + H.fig(s.qualityPct, base + '.qualityPct');
+
+  const co = H.score(null);
+  const deptRows = S.departments
+    .map(d => ({ key: d.key, name: d.name, s: H.score({ dept: d.key }) }))
+    .sort((a, b) => (b.s.overall ?? -1) - (a.s.overall ?? -1));
+  const empRows = S.employees
+    .map(e => ({ id: e.id, name: e.name, s: H.score({ emp: e.id }) }))
+    .filter(e => e.s.cohort > 0 || e.s.ratingCount > 0)
+    .sort((a, b) => (b.s.overall ?? -1) - (a.s.overall ?? -1));
+
+  let html = '<h1>Scoreboard</h1><p class="sub">' + H.esc(S.periodLabel) + ' · jobs due in the window</p>';
+
+  html += '<button class="dstrip" data-tap="drill" data-arg="company"><span class="dname">' + H.esc(S.companyShort) +
+    '<span class="dmeta">' + partsLine(co, 'score.company') + '</span></span>' +
+    H.bandChip(co.overall, { live: true }) +
+    '<span class="dscore">' + H.fig(co.overall, 'score.company.overall') + '</span></button>';
+
+  html += '<p class="weightline">Score = completion 50 per cent + on time 30 per cent + quality 20 per cent. Cancelled jobs are excluded and shown beside the score, never in it.</p>';
+
+  html += '<div class="tabrow"><button class="' + (store.sbTab === 'dept' ? 'on' : '') + '" data-tap="sbTab" data-arg="dept">Departments</button>' +
+    '<button class="' + (store.sbTab === 'people' ? 'on' : '') + '" data-tap="sbTab" data-arg="people">People</button></div>';
+
+  if (store.sbTab === 'dept') {
+    for (const d of deptRows) {
+      html += '<button class="srow" data-tap="drill" data-arg="dept:' + d.key + '"><span class="sname">' + H.esc(d.name) +
+        '<span class="sparts">' + partsLine(d.s, 'score.dept.' + d.key) + ' · ' + H.fig(d.s.cohort, 'score.dept.' + d.key + '.cohort', 'raw') + ' due</span></span>' +
+        H.bandChip(d.s.overall, { live: true }) + '<span class="dscore">' + H.fig(d.s.overall, 'score.dept.' + d.key + '.overall') + '</span></button>';
+    }
+  } else {
+    for (const e of empRows) {
+      html += '<button class="srow" data-tap="drill" data-arg="emp:' + e.id + '"><span class="sname">' + H.esc(e.name) +
+        '<span class="sparts">' + partsLine(e.s, 'score.emp.' + e.id) + ' · ' + H.fig(e.s.cohort, 'score.emp.' + e.id + '.cohort', 'raw') + ' due</span></span>' +
+        H.bandChip(e.s.overall, { live: true }) + '<span class="dscore">' + H.fig(e.s.overall, 'score.emp.' + e.id + '.overall') + '</span></button>';
+    }
+  }
+
+  html += '<div class="card slider-card"><label>Excellent starts at <b id="slider-val">' + store.excellentMin + '</b></label>' +
+    '<input type="range" id="slider-ex" min="82" max="95" step="1" value="' + store.excellentMin + '">' +
+    '<p class="note">Drag the line and watch the badges recolour. The Director sets the bands in settings in the real build; the document names 90 as the default.</p></div>';
+
+  html += '<div class="card"><div class="ai-top">' + H.icon('doc') + '<span class="t">Monthly report, PDF</span></div>' +
+    '<p class="note">One page, this scoreboard in print, built from the same seed.</p>' +
+    '<button class="btn" data-tap="pdf">Open the sample</button></div>';
+
+  return html;
+};
+
+SCREENS.myscore = () => {
+  const partsLine = (s, base) =>
+    'Completion ' + H.fig(s.completionPct, base + '.completionPct') + ' · On time ' + H.fig(s.ontimePct, base + '.ontimePct') +
+    ' · Quality ' + H.fig(s.qualityPct, base + '.qualityPct');
+
+  const s = H.score({ emp: store.role });
+  const base = 'score.emp.' + store.role;
+
+  let html = '<h1>My score</h1><p class="sub">' + H.esc(H.empName(store.role)) + ' · ' + H.esc(S.periodLabel) + '</p>';
+
+  html += '<button class="dstrip" data-tap="drill" data-arg="emp:' + store.role + '"><span class="dname">' + H.esc(H.empName(store.role)) +
+    '<span class="dmeta">' + partsLine(s, base) + '</span></span>' +
+    H.bandChip(s.overall, { live: true }) +
+    '<span class="dscore">' + H.fig(s.overall, base + '.overall') + '</span></button>';
+
+  html += '<p class="weightline">Approved jobs count. Awaiting approval does not count yet. Cancelled jobs never count against you.</p>';
+
+  return html;
+};
+
+SHEETS.drill = (arg) => {
+  const partsLine = (s, base) =>
+    'Completion ' + H.fig(s.completionPct, base + '.completionPct') + ' · On time ' + H.fig(s.ontimePct, base + '.ontimePct') +
+    ' · Quality ' + H.fig(s.qualityPct, base + '.qualityPct');
+
+  let filter, name, base;
+  if (arg === 'company') {
+    filter = null;
+    name = S.companyShort;
+    base = 'score.company';
+  } else if (arg.startsWith('dept:')) {
+    const key = arg.slice(5);
+    filter = { dept: key };
+    name = H.deptName(key);
+    base = 'score.dept.' + key;
+  } else {
+    const id = arg.slice(4);
+    filter = { emp: id };
+    name = H.empName(id);
+    base = 'score.emp.' + id;
+  }
+
+  const s = H.score(filter);
+
+  let body = '<p class="sub">' + H.esc(S.periodLabel) + '</p>';
+
+  if (s.overall === null) {
+    body += '<div class="mathline">Not measurable yet: nothing was due in this window.</div>';
+  } else {
+    body += '<div class="mathline">0.5 x ' + H.fig(s.completionPct, base + '.completionPct', '1dp') + ' + 0.3 x ' +
+      H.fig(s.ontimePct, base + '.ontimePct', '1dp') + ' + 0.2 x ' + H.fig(s.qualityPct, base + '.qualityPct', '1dp') +
+      ' = ' + H.fig(s.overall, base + '.overall', '1dp') + ', shown as ' + H.fig(s.overall, base + '.overall') + '</div>';
+  }
+
+  body += '<p class="note">Completion: ' + H.fig(s.completed, base + '.completed', 'raw') + ' of ' +
+    H.fig(s.cohort, base + '.cohort', 'raw') + ' jobs due were completed. On time: ' +
+    H.fig(s.ontimeN, base + '.ontimeN', 'raw') + ' of ' + H.fig(s.ontimeD, base + '.ontimeD', 'raw') +
+    ' completed jobs were submitted by their deadline. Quality: the average of ' +
+    H.fig(s.ratingCount, base + '.ratingCount', 'raw') + ' ratings minus 5 points for each of ' +
+    H.fig(s.rejectionCount, base + '.rejectionCount', 'raw') + ' rejections.</p>';
+
+  if (s.cancelledExcluded > 0) {
+    body += '<p class="note">' + H.fig(s.cancelledExcluded, base + '.cancelledExcluded', 'raw') +
+      (s.cancelledExcluded > 1 ? ' cancelled jobs are' : ' cancelled job is') + ' excluded from every figure above.</p>';
+  }
+
+  body += H.secHead('The jobs behind it', H.fig(s.rows.length, base + '.cohort', 'raw') + ' due in the window');
+
+  if (s.rows.length === 0) {
+    body += H.empty('Nothing was due in this window.');
+  } else {
+    for (const row of s.rows) {
+      body += '<div class="drow"><span class="dtitle" data-tap="jobOpen" data-arg="' + row.ref + '">' + H.esc(row.title) +
+        ' <span class="dref">' + row.ref + '</span></span>';
+      if (row.counted) {
+        body += '<span class="chip st-completed"><span class="dot"></span>' + (row.ontime ? 'On time' : 'Late') + '</span>';
+      } else {
+        body += H.stateChip(H.job(row.ref));
+      }
+      if (row.stars) {
+        body += '<span class="chip">' + row.stars + ' of 5</span>';
+      }
+      if (row.rejections) {
+        body += '<span class="chip st-overdue">' + row.rejections + ' rejected</span>';
+      }
+      body += '</div>';
+    }
+  }
+
+  body += H.secHead('Quality events this month', '');
+
+  if (s.qualityEvents.length === 0) {
+    body += H.empty('No ratings or rejections in this window yet.');
+  } else {
+    for (const e of s.qualityEvents) {
+      if (e.kind === 'rating') {
+        body += '<div class="qev"><span>' + e.ref + ' rated ' + e.stars + ' of 5</span><span class="plus">' + e.pts + ' pts</span></div>';
+      } else {
+        body += '<div class="qev"><span>' + e.ref + ' rejected</span><span class="minus">minus 5</span></div>';
+      }
+    }
+  }
+
+  return {
+    title: name,
+    body: body,
+    bar: '<button class="btn btn-quiet" data-tap="sheetClose">Close</button>'
+  };
+};
+/*@@END:S6@@*/
+
+/* ---------- shell-owned sheets ---------- */
+SHEETS.role = () => ({
+  title: 'Demo role switch',
+  body: '<p class="note" style="margin-top:0">One phone plays both sides in this demo. The real build signs each person in.</p>' +
+    [['director', 'Director', 'Assigns, approves and sees every department'],
+     ['ruwan', 'Ruwan Siriwardena', 'Maintenance fitter, sees his own jobs only']].map(r =>
+      '<button class="rolerow' + (store.role === r[0] ? ' on' : '') + '" data-tap="roleSet" data-arg="' + r[0] + '">' +
+      H.icon('user') + '<span class="rwho">' + r[1] + '<span class="rsub">' + r[2] + '</span></span>' + H.icon('check') + '</button>').join(''),
+  bar: '<button class="btn-quiet btn" data-tap="sheetClose">Close</button>',
+});
+SHEETS.bell = () => { const c = H.counts();
+  const rows = [];
+  for (const ev of store.events.slice().reverse()) rows.push({ ic: 'check', t: ev, when: 'Just now' });
+  for (const j of store.jobs) { const st = E.derivedState(j, NOW);
+    if (st === 'overdue') rows.push({ ic: 'alert', t: j.title + ' is overdue (' + H.empFirst(j.assignee) + ')', when: 'Was due ' + H.fmtDT(E.effectiveDue(j)) });
+    else if (st === 'awaiting') rows.push({ ic: 'clock', t: j.title + ' is waiting for your approval', when: 'Submitted ' + H.fmtDT(E.T(j.submittedAt)) });
+    else if (E.dayKey(E.effectiveDue(j)) === E.dayKey(NOW) && E.effectiveDue(j) >= NOW && st !== 'completed' && st !== 'cancelled')
+      rows.push({ ic: 'clock', t: j.title + ' is due today at ' + H.fmtTime(E.effectiveDue(j)), when: H.empFirst(j.assignee) }); }
+  return { title: 'Reminders',
+    body: '<p class="note" style="margin-top:0">Simulated on the frozen demo clock, ' + H.fmtDT(NOW) + '. The real build sends these in app and by email on a live clock.</p>' +
+      rows.slice(0, 24).map(r => '<div class="bellrow">' + H.icon(r.ic, 'ic-s') + '<div><div>' + H.esc(r.t) + '</div><span class="bwhen">' + H.esc(r.when) + '</span></div></div>').join(''),
+    bar: '<button class="btn-quiet btn" data-tap="sheetClose">Close</button>' };
+};
+
+/* ---------- actions ---------- */
+let toastTimer = null;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 2600); }
+
+const ACTIONS = {};
+ACTIONS.nav = s => { store.screen = s; render(); window.scrollTo(0, 0); };
+ACTIONS.navJobs = arg => { store.filters = { q: '', dept: '', state: arg || '', prio: '' };
+  store.screen = 'jobs'; render(); window.scrollTo(0, 0); };
+ACTIONS.sbTab = v => { store.sbTab = v; render(); };
+ACTIONS.role = () => openSheet('role');
+ACTIONS.roleSet = id => { store.role = id; store.sheets = []; syncHistory();
+  store.screen = id === 'director' ? 'home' : 'myday'; unlockBody(); render(); window.scrollTo(0, 0); };
+ACTIONS.bell = () => openSheet('bell');
+ACTIONS.sheetClose = () => closeTop();
+ACTIONS.jobOpen = ref => openSheet('job', ref);
+ACTIONS.assignOpen = () => { store.assignDraft = null; store.editRef = null; store.voiceOpen = false; openSheet('assign'); };
+ACTIONS.editJob = ref => { const j = H.job(ref); store.editRef = ref; store.voiceOpen = false;
+  store.assignDraft = { title: j.title, desc: j.desc, dept: j.dept, emp: j.assignee, prio: j.priority,
+    evreq: j.evidence.required, evkind: j.evidence.kind, due: E.effectiveDue(j) };
+  store.sheets = []; syncHistory(); openSheet('assign'); };
+ACTIONS.voiceDraft = () => { store.voiceOpen = true; rerenderSheet(); };
+ACTIONS.voiceApply = () => {
+  store.assignDraft = { title: 'Replace chiller door gasket', desc: 'Cold room two door seal is leaking. Replace the gasket before dinner service.',
+    dept: 'mnt', emp: 'ruwan', prio: 'High', evreq: true, evkind: 'Photo of the gauge', due: null, fromVoice: true };
+  rerenderSheet(); };
+ACTIONS.deptPick = () => rerenderForm();
+ACTIONS.dispatchJob = () => {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const title = v('f-title').trim(), dept = v('f-dept'), emp = v('f-emp');
+  if (!title) { toast('Give the job a title'); return; }
+  if (!dept || !emp) { toast('Pick a department and a person'); return; }
+  const dayMap = { today: 27, tomorrow: 28, wed: 28, thu: 29, fri: 30 };
+  const dd = dayMap[v('f-dueday')] || 27;
+  const due = '2026-10-' + dd + 'T' + (v('f-duetime') || '17:00') + ':00+05:30';
+  const evreq = document.getElementById('f-evreq').checked;
+  const evkind = v('f-evkind').trim() || 'Photo of the finished work';
+  if (store.editRef) {
+    const j = H.job(store.editRef);
+    j.title = title; j.desc = v('f-desc'); j.dept = dept; j.assignee = emp; j.due = due;
+    j.priority = v('f-prio') || 'Medium'; j.evidence = { required: evreq, kind: evkind };
+    j.audit.push({ at: S.demoNow, who: 'Director', what: 'Edited by the Director' });
+    store.sheets = []; syncHistory(); unlockBody(); toast('Job ' + j.ref + ' updated'); render(); return;
+  }
+  const ref = E.refNext(store.jobs);
+  store.jobs.push({ ref, title, desc: v('f-desc'), dept, assignee: emp, createdBy: 'Director',
+    createdAt: S.demoNow, due, priority: v('f-prio') || 'Medium',
+    evidence: { required: evreq, kind: evkind }, approvalRequired: true, state: 'not_started', progress: 0,
+    rejections: [], photos: [],
+    audit: [{ at: S.demoNow, who: 'Director', what: 'Created and assigned to ' + H.empName(emp) }] });
+  store.events.push('Job ' + ref + ' assigned to ' + H.empName(emp));
+  store.sheets = []; syncHistory(); openSheet('dispatched', ref);
+};
+ACTIONS.startJob = ref => { const j = H.job(ref); if (j.state !== 'not_started') return;
+  j.state = 'in_progress'; j.startAt = S.demoNow;
+  j.audit.push({ at: S.demoNow, who: j.assignee, what: 'Started, status In Progress' });
+  store.freshAudit = S.demoNow; rerenderSheet(); render(); };
+ACTIONS.attachPhoto = ref => { const j = H.job(ref);
+  const kind = (j.evidence.kind || '').toLowerCase();
+  const scene = kind.includes('gauge') ? 'gauge' : kind.includes('quote') ? 'doc' : 'generic';
+  j.photos.push({ scene, label: 'IMG_' + (2140 + j.photos.length + store.jobs.length) + '.jpg' });
+  if (j.state === 'not_started') { j.state = 'in_progress'; j.startAt = j.startAt || S.demoNow; }
+  j.audit.push({ at: S.demoNow, who: j.assignee, what: 'Evidence attached' });
+  store.freshAudit = S.demoNow; rerenderSheet(); };
+ACTIONS.submitJob = ref => { const j = H.job(ref);
+  if (j.evidence.required && j.photos.length === 0) { toast('Evidence required first: ' + j.evidence.kind); return; }
+  const m = (j.evidence.kind || '').match(/(\d+)/);
+  if (m && j.photos.length < +m[1]) { openSheet('nudge', ref, true); return; }
+  doSubmit(j);
+};
+ACTIONS.nudgeConfirm = ref => { store.sheets.pop(); syncHistory(); doSubmit(H.job(ref)); };
+function doSubmit(j) {
+  j.state = 'submitted'; j.submittedAt = S.demoNow; j.progress = 100;
+  j.audit.push({ at: S.demoNow, who: j.assignee, what: 'Submitted for approval, evidence attached' });
+  store.freshAudit = S.demoNow;
+  store.events.push(j.title + ' submitted for approval');
+  rerenderSheet(); render(); toast('Submitted. Awaiting approval, not completed yet.');
+}
+ACTIONS.approveOpen = ref => { store.approveStars = 0; openSheet('approve', ref); };
+ACTIONS.approveStars = n => { store.approveStars = +n; rerenderSheet(); };
+ACTIONS.approveConfirm = ref => { if (!store.approveStars) { toast('Tap a quality rating first'); return; }
+  const j = H.job(ref);
+  j.state = 'approved'; j.approvedAt = S.demoNow;
+  j.rating = { stars: store.approveStars, by: 'Director', at: S.demoNow, comment: '' };
+  j.audit.push({ at: S.demoNow, who: 'Director', what: 'Approved, quality ' + store.approveStars + ' of 5' });
+  store.events.push(j.title + ' approved, ' + store.approveStars + ' of 5');
+  store.sheets = []; syncHistory(); unlockBody(); render();
+  toast('Approved and completed. ' + H.empFirst(j.assignee) + ' has been told.'); };
+ACTIONS.rejectOpen = ref => { store.rejectReason = ''; openSheet('reject', ref); };
+ACTIONS.rejectPick = r => { store.rejectReason = r; rerenderSheet(); };
+ACTIONS.rejectConfirm = ref => { if (!store.rejectReason) { toast('Pick a reason first'); return; }
+  const j = H.job(ref);
+  j.state = 'in_progress'; j.progress = 60;
+  j.rejections.push({ at: S.demoNow, by: 'Director', reason: store.rejectReason });
+  j.audit.push({ at: S.demoNow, who: 'Director', what: 'Rejected: ' + store.rejectReason });
+  store.events.push(j.title + ' rejected and returned to ' + H.empFirst(j.assignee));
+  store.sheets = []; syncHistory(); unlockBody(); render();
+  toast('Rejected and returned. The deadline clock never paused.'); };
+ACTIONS.drill = arg => openSheet('drill', arg);
+ACTIONS.boardView = v => { store.boardView = v; render(); };
+ACTIONS.pdf = () => { window.open('MM-Monthly-Report-SAMPLE.pdf', '_blank'); };
+
+/* ---------- sheet machinery with real Back behaviour ---------- */
+let lockedY = 0;
+const pendingRetires = []; // one entry per history.go call in flight, holding its step count
+const pendingSteps = () => pendingRetires.reduce((a, b) => a + b, 0);
+function lockBody() { if (document.body.classList.contains('locked')) return;
+  lockedY = window.scrollY; document.body.style.top = -lockedY + 'px'; document.body.classList.add('locked'); setInert(true); }
+function unlockBody() { if (!document.body.classList.contains('locked')) return;
+  document.body.classList.remove('locked'); document.body.style.top = ''; window.scrollTo(0, lockedY); setInert(false); }
+function setInert(on) { for (const id of ['topbar', 'screen', 'nav']) { const el = document.getElementById(id);
+  if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); } }
+/* A code close retires its history entry with history.go, which is ASYNC: an open that lands while the
+   traversal is in flight gets its fresh entry popped and the app walks off its own history. So every code
+   close counts in pendingClose, the popstate it causes clears it, and openSheet waits the few frames. */
+function histRetire(n) { if (n > 0) { pendingRetires.push(n); history.go(-n); } }
+function openSheet(name, param, layer2, tries) {
+  if (pendingRetires.length && (tries || 0) < 8) { setTimeout(() => openSheet(name, param, layer2, (tries || 0) + 1), 40); return; }
+  pendingRetires.length = 0;
+  store.sheets.push({ name, param, layer2: !!layer2 });
+  history.pushState({ mmSheets: store.sheets.length }, '');
+  render(); lockBody();
+  const host = document.querySelector('#sheets .sheet:last-child'); if (host) host.focus({ preventScroll: true });
+}
+function closeTop() { if (!store.sheets.length) return;
+  store.sheets.pop(); histRetire(1);
+  render(); if (!store.sheets.length) unlockBody(); }
+function syncHistory() {
+  const n = ((history.state && history.state.mmSheets) || 0) - store.sheets.length - pendingSteps();
+  histRetire(n); }
+window.addEventListener('popstate', () => {
+  if (pendingRetires.length) { pendingRetires.shift(); return; }
+  if (store.sheets.length) { store.sheets.pop(); render(); if (!store.sheets.length) unlockBody(); }
+});
+history.scrollRestoration = 'manual';
+function rerenderSheet() { renderSheets(); }
+function rerenderForm() { const d = draftFromForm(); store.assignDraft = d; renderSheets(); }
+function draftFromForm() { const v = id => (document.getElementById(id) || {}).value || '';
+  return { title: v('f-title'), desc: v('f-desc'), dept: v('f-dept'), emp: v('f-emp'), prio: v('f-prio'),
+    evreq: (document.getElementById('f-evreq') || {}).checked !== false, evkind: v('f-evkind'),
+    dueday: v('f-dueday'), duetime: v('f-duetime'), fromVoice: (store.assignDraft || {}).fromVoice }; }
+
+/* ---------- band slider live patch (no full re-render mid drag) ---------- */
+function patchBands() {
+  document.querySelectorAll('[data-bandfig]').forEach(el => {
+    const o = el.getAttribute('data-overall');
+    const b = E.bandFor(o === '' ? null : +o, store.excellentMin);
+    el.className = 'band band-' + b.key;
+    el.setAttribute('data-bandfig', '');
+    el.innerHTML = '<span class="dot"></span>' + b.label;
+  });
+  const lab = document.getElementById('slider-val'); if (lab) lab.textContent = store.excellentMin;
+}
+
+/* ---------- render ---------- */
+function navItems() { return store.role === 'director'
+  ? [['home', 'Today', 'board'], ['jobs', 'Jobs', 'list'], ['approvals', 'Approvals', 'check'], ['scoreboard', 'Scores', 'star']]
+  : [['myday', 'My day', 'board'], ['myscore', 'My score', 'star']]; }
+function render() {
+  const c = H.counts();
+  document.getElementById('topbar').innerHTML =
+    '<div class="wordmark">Midnight Masalaa<small>Job Tracker</small></div><span class="chip-demo">DEMO</span>' +
+    '<div class="top-right">' +
+    '<button class="iconbtn" data-tap="bell" aria-label="Reminders">' + H.icon('bell') +
+      (c.awaiting + c.overdue ? '<span class="bellbadge">' + (c.awaiting + c.overdue) + '</span>' : '') + '</button>' +
+    '<button class="rolepill" data-tap="role">' + H.icon('user', 'ic-s') + H.empFirst(store.role === 'director' ? 'Director' : store.role) + H.icon('chevron', 'ic-s') + '</button>' +
+    '</div>';
+  const items = navItems();
+  if (!items.some(i => i[0] === store.screen)) store.screen = items[0][0];
+  document.getElementById('nav').innerHTML = items.map(i =>
+    '<button class="' + (store.screen === i[0] ? 'on' : '') + '" data-tap="nav" data-arg="' + i[0] + '">' + H.icon(i[2]) +
+    (i[0] === 'approvals' && c.awaiting ? '<span class="navbadge">' + c.awaiting + '</span>' : '') +
+    '<span>' + i[1] + '</span></button>').join('');
+  document.getElementById('screen').innerHTML = (SCREENS[store.screen] || (() => ''))();
+  renderSheets();
+}
+function renderSheets() {
+  const host = document.getElementById('sheets');
+  document.getElementById('backdrop').classList.toggle('on', store.sheets.length > 0);
+  host.innerHTML = store.sheets.map((sh, i) => {
+    const def = (SHEETS[sh.name] || (() => ({ title: sh.name, body: '', bar: '' })))(sh.param);
+    return '<section class="sheet on' + (sh.layer2 || i > 0 ? ' layer2' : '') + '" role="dialog" aria-modal="true" tabindex="-1" aria-label="' + H.esc(def.title) + '">' +
+      '<div class="sheet-head"><div class="sh-title">' + def.title + '</div>' +
+      '<button class="sh-x" data-tap="sheetClose" aria-label="Close">' + H.icon('x', 'ic-s') + '</button></div>' +
+      '<div class="sheet-body">' + def.body + '</div>' +
+      '<div class="abar">' + (def.bar || '') + '</div></section>';
+  }).join('');
+  if (store.sheets.length > 1) { const first = host.querySelector('.sheet'); if (first) first.setAttribute('inert', ''); }
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-tap]');
+  if (!el) return;
+  const fn = ACTIONS[el.getAttribute('data-tap')];
+  if (fn) fn(el.getAttribute('data-arg'), el);
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'slider-ex') { store.excellentMin = +e.target.value; patchBands(); }
+  if (e.target.id === 'f-q') { store.filters.q = e.target.value; const l = document.getElementById('jobs-results'); if (l) l.innerHTML = window.renderJobResults ? window.renderJobResults() : ''; }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'slider-ex') { store.excellentMin = +e.target.value; render(); }
+  if (e.target.id === 'f-fdept') { store.filters.dept = e.target.value; render(); }
+  if (e.target.id === 'f-fstate') { store.filters.state = e.target.value; render(); }
+  if (e.target.id === 'f-fprio') { store.filters.prio = e.target.value; render(); }
+  if (e.target.id === 'f-dept') rerenderForm();
+});
+window.addEventListener('scroll', () => {
+  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
+}, { passive: true });
+if (window.visualViewport) { const vv = () =>
+    document.documentElement.style.setProperty('--vv-top', window.visualViewport.offsetTop + 'px');
+  window.visualViewport.addEventListener('scroll', vv); window.visualViewport.addEventListener('resize', vv); }
+
+render();
+</script>
+</body>
+</html>
